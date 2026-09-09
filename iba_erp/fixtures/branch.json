@@ -1,0 +1,30 @@
+[
+ {
+  "branch": "Biratnagar Warehouse",
+  "docstatus": 0,
+  "doctype": "Branch",
+  "modified": "2026-09-08 12:18:21.561353",
+  "name": "Biratnagar Warehouse"
+ },
+ {
+  "branch": "Itahari Warehouse",
+  "docstatus": 0,
+  "doctype": "Branch",
+  "modified": "2026-09-08 12:18:21.616830",
+  "name": "Itahari Warehouse"
+ },
+ {
+  "branch": "Damak Warehouse",
+  "docstatus": 0,
+  "doctype": "Branch",
+  "modified": "2026-09-08 12:18:21.623620",
+  "name": "Damak Warehouse"
+ },
+ {
+  "branch": "Inaruwa Warehouse",
+  "docstatus": 0,
+  "doctype": "Branch",
+  "modified": "2026-09-08 12:18:21.630069",
+  "name": "Inaruwa Warehouse"
+ }
+]

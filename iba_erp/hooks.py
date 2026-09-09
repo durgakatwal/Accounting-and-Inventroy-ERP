@@ -256,3 +256,11 @@ app_license = "mit"
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
+fixtures = [
+    {"dt": "Workspace", "filters": [["name", "in", ["IBA Accounting", "Inventory", "IBA Reports"]]]},
+    {"dt": "Workspace Sidebar", "filters": [["name", "in", ["IBA Accounting", "Inventory", "IBA Reports"]]]},
+    {"dt": "Report", "filters": [["name", "in", ["IBA Income Balances", "IBA Expense Balances", "IBA Bank and Cash Balances", "IBA Customer Ledger", "IBA Supplier Ledger", "VAT Report", "Internal Audit Report"]]]},
+    {"dt": "Company"},
+    {"dt": "Branch"},
+    {"dt": "Warehouse"},
+]

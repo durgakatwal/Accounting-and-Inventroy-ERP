@@ -1,0 +1,21 @@
+{
+ "app": "iba_erp",
+ "bg_color": "gray",
+ "creation": "2026-09-08 14:28:44.791867",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon_image": "/private/files/icons8-sales-64.png",
+ "icon_type": "Link",
+ "idx": 0,
+ "label": "Sales Invoices",
+ "link_to": "Sales Invoices",
+ "link_type": "Workspace Sidebar",
+ "modified": "2026-09-08 16:21:33.544414",
+ "modified_by": "Administrator",
+ "name": "Sales Invoices",
+ "owner": "Administrator",
+ "restrict_removal": 0,
+ "roles": [],
+ "standard": 1
+}

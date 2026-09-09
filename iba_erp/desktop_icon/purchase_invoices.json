@@ -1,0 +1,20 @@
+{
+ "app": "iba_erp",
+ "bg_color": "gray",
+ "creation": "2026-09-09 11:25:35.120700",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon_type": "Link",
+ "idx": 0,
+ "label": "Purchase Invoices",
+ "link_to": "Purchase Invoices",
+ "link_type": "Workspace Sidebar",
+ "modified": "2026-09-09 11:26:27.856189",
+ "modified_by": "Administrator",
+ "name": "Purchase Invoices",
+ "owner": "Administrator",
+ "restrict_removal": 0,
+ "roles": [],
+ "standard": 1
+}
