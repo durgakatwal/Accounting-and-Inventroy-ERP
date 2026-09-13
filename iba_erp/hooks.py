@@ -254,13 +254,21 @@ app_license = "mit"
 # Translation
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
-# ignore_translatable_strings_from = []
+# ignore_translatable_string
+
 
 fixtures = [
-    {"dt": "Workspace", "filters": [["name", "in", ["IBA Accounting", "Inventory", "IBA Reports"]]]},
-    {"dt": "Workspace Sidebar", "filters": [["name", "in", ["IBA Accounting", "Inventory", "IBA Reports"]]]},
-    {"dt": "Report", "filters": [["name", "in", ["IBA Income Balances", "IBA Expense Balances", "IBA Bank and Cash Balances", "IBA Customer Ledger", "IBA Supplier Ledger", "VAT Report", "Internal Audit Report"]]]},
-    {"dt": "Company"},
-    {"dt": "Branch"},
-    {"dt": "Warehouse"},
+    {"dt": "DocType", "filters": [["name", "in", ["Student", "Visitor Entry"]]]},
+    {"dt": "Workspace", "filters": [["name", "like", "IBA%"]]},
+    {"dt": "Workspace", "filters": [["name", "in", ["Inventory", "POS Sales", "Bank And Cash"]]]},
+    {"dt": "Workspace Sidebar", "filters": [["name", "like", "IBA%"]]},
+    {"dt": "Workspace Sidebar", "filters": [["name", "in", ["Inventory", "POS Sales", "Bank And Cash"]]]},
+    {"dt": "Report", "filters": [["name", "like", "IBA%"]]},
+    {"dt": "Custom Field", "filters": [["dt", "in", ["Sales Invoice", "Payment Entry", "Item", "Customer", "Supplier", "Student", "Visitor Entry"]]]},
+    {"dt": "Property Setter", "filters": [["doc_type", "in", ["Item", "Payment Entry"]]]},
+    {"dt": "Server Script", "filters": [["reference_doctype", "in", ["Student", "Visitor Entry"]]]},
+    {"dt": "Client Script", "filters": [["dt", "in", ["Item", "Student"]]]},
+    {"dt": "Number Card", "filters": [["label", "like", "%KPI%"]]},
+    {"dt": "Dashboard Chart", "filters": [["chart_name", "like", "IBA%"]]},
+    {"dt": "Dashboard", "filters": [["name", "like", "IBA%"]]},
 ]

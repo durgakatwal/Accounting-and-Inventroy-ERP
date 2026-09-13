@@ -4,212 +4,6 @@
   "add_translate_data": 0,
   "columns": [
    {
-    "fieldname": "category",
-    "fieldtype": "Data",
-    "label": "Category",
-    "options": null,
-    "width": 180
-   },
-   {
-    "fieldname": "reference",
-    "fieldtype": "Data",
-    "label": "Reference",
-    "options": null,
-    "width": 150
-   },
-   {
-    "fieldname": "date",
-    "fieldtype": "Date",
-    "label": "Date",
-    "options": null,
-    "width": 100
-   },
-   {
-    "fieldname": "details",
-    "fieldtype": "Data",
-    "label": "Details",
-    "options": null,
-    "width": 250
-   },
-   {
-    "fieldname": "amount",
-    "fieldtype": "Currency",
-    "label": "Amount",
-    "options": null,
-    "width": 120
-   },
-   {
-    "fieldname": "user",
-    "fieldtype": "Data",
-    "label": "User",
-    "options": null,
-    "width": 150
-   }
-  ],
-  "disabled": 0,
-  "docstatus": 0,
-  "doctype": "Report",
-  "filters": [
-   {
-    "default": null,
-    "fieldname": "company",
-    "fieldtype": "Link",
-    "label": "Company",
-    "mandatory": 0,
-    "options": "Company",
-    "wildcard_filter": 0
-   },
-   {
-    "default": null,
-    "fieldname": "from_date",
-    "fieldtype": "Date",
-    "label": "From Date",
-    "mandatory": 0,
-    "options": null,
-    "wildcard_filter": 0
-   },
-   {
-    "default": null,
-    "fieldname": "to_date",
-    "fieldtype": "Date",
-    "label": "To Date",
-    "mandatory": 0,
-    "options": null,
-    "wildcard_filter": 0
-   }
-  ],
-  "is_standard": "No",
-  "javascript": null,
-  "json": null,
-  "letter_head": "Company Letterhead - Grey",
-  "modified": "2026-09-08 16:03:18.082234",
-  "module": "Accounts",
-  "name": "Internal Audit Report",
-  "prepared_report": 0,
-  "query": null,
-  "ref_doctype": "Sales Invoice",
-  "reference_report": null,
-  "report_name": "Internal Audit Report",
-  "report_script": "\nresult = []\n\ncompany = filters.get(\"company\")\nfrom_date = filters.get(\"from_date\")\nto_date = filters.get(\"to_date\")\n\nconditions = \"company = %(company)s\"\nvalues = {\"company\": company}\nif from_date:\n    conditions += \" and posting_date >= %(from_date)s\"\n    values[\"from_date\"] = from_date\nif to_date:\n    conditions += \" and posting_date <= %(to_date)s\"\n    values[\"to_date\"] = to_date\n\n# 1. Stock Reconciliation adjustments\nrecon_conditions = conditions.replace(\"posting_date\", \"posting_date\")\nrecons = frappe.db.sql(f\"\"\"\n    select name, posting_date, owner\n    from `tabStock Reconciliation`\n    where docstatus = 1 and {recon_conditions}\n\"\"\", values, as_dict=True)\nfor r in recons:\n    result.append({\n        \"category\": \"Stock Reconciliation\",\n        \"reference\": r.name,\n        \"date\": r.posting_date,\n        \"details\": \"Physical stock count adjustment\",\n        \"amount\": 0,\n        \"user\": r.owner\n    })\n\n# 2. Cancelled Sales Invoices\ncancelled = frappe.db.sql(f\"\"\"\n    select name, posting_date, grand_total, owner\n    from `tabSales Invoice`\n    where docstatus = 2 and {conditions}\n\"\"\", values, as_dict=True)\nfor c in cancelled:\n    result.append({\n        \"category\": \"Cancelled Sales Invoice\",\n        \"reference\": c.name,\n        \"date\": c.posting_date,\n        \"details\": \"Invoice was cancelled after creation\",\n        \"amount\": c.grand_total,\n        \"user\": c.owner\n    })\n\n# 3. Manual Journal Entries (not auto-generated from other transactions)\nje_conditions = conditions\njournals = frappe.db.sql(f\"\"\"\n    select name, posting_date, total_debit, owner, voucher_type\n    from `tabJournal Entry`\n    where docstatus = 1 and voucher_type = 'Journal Entry' and {je_conditions}\n\"\"\", values, as_dict=True)\nfor j in journals:\n    result.append({\n        \"category\": \"Manual Journal Entry\",\n        \"reference\": j.name,\n        \"date\": j.posting_date,\n        \"details\": \"Manually posted journal entry\",\n        \"amount\": j.total_debit,\n        \"user\": j.owner\n    })\n\n# 4. Payment Entries with no invoice reference\npayments = frappe.db.sql(f\"\"\"\n    select pe.name, pe.posting_date, pe.paid_amount, pe.owner\n    from `tabPayment Entry` pe\n    where pe.docstatus = 1 and pe.company = %(company)s\n    and not exists (select 1 from `tabPayment Entry Reference` per where per.parent = pe.name)\n    {\"and pe.posting_date >= %(from_date)s\" if from_date else \"\"}\n    {\"and pe.posting_date <= %(to_date)s\" if to_date else \"\"}\n\"\"\", values, as_dict=True)\nfor p in payments:\n    result.append({\n        \"category\": \"Unlinked Payment Entry\",\n        \"reference\": p.name,\n        \"date\": p.posting_date,\n        \"details\": \"Payment with no linked invoice reference\",\n        \"amount\": p.paid_amount,\n        \"user\": p.owner\n    })\n\ncolumns = [\n    {\"label\": \"Category\", \"fieldname\": \"category\", \"fieldtype\": \"Data\", \"width\": 180},\n    {\"label\": \"Reference\", \"fieldname\": \"reference\", \"fieldtype\": \"Dynamic Link\", \"options\": \"category\", \"width\": 150},\n    {\"label\": \"Date\", \"fieldname\": \"date\", \"fieldtype\": \"Date\", \"width\": 100},\n    {\"label\": \"Details\", \"fieldname\": \"details\", \"fieldtype\": \"Data\", \"width\": 250},\n    {\"label\": \"Amount\", \"fieldname\": \"amount\", \"fieldtype\": \"Currency\", \"width\": 120},\n    {\"label\": \"User\", \"fieldname\": \"user\", \"fieldtype\": \"Data\", \"width\": 150},\n]\n\n",
-  "report_type": "Script Report",
-  "roles": [
-   {
-    "role": "Accounts Manager"
-   },
-   {
-    "role": "Accounts User"
-   }
-  ],
-  "timeout": 0
- },
- {
-  "add_total_row": 0,
-  "add_translate_data": 0,
-  "columns": [
-   {
-    "fieldname": "type",
-    "fieldtype": "Data",
-    "label": "Type",
-    "options": null,
-    "width": 180
-   },
-   {
-    "fieldname": "reference",
-    "fieldtype": "Data",
-    "label": "Reference",
-    "options": null,
-    "width": 150
-   },
-   {
-    "fieldname": "date",
-    "fieldtype": "Date",
-    "label": "Date",
-    "options": null,
-    "width": 100
-   },
-   {
-    "fieldname": "party",
-    "fieldtype": "Data",
-    "label": "Party",
-    "options": null,
-    "width": 220
-   },
-   {
-    "fieldname": "taxable_amount",
-    "fieldtype": "Currency",
-    "label": "Taxable Amount",
-    "options": null,
-    "width": 130
-   },
-   {
-    "fieldname": "vat_amount",
-    "fieldtype": "Currency",
-    "label": "VAT Amount (13%)",
-    "options": null,
-    "width": 130
-   }
-  ],
-  "disabled": 0,
-  "docstatus": 0,
-  "doctype": "Report",
-  "filters": [
-   {
-    "default": null,
-    "fieldname": "company",
-    "fieldtype": "Link",
-    "label": "Company",
-    "mandatory": 0,
-    "options": "Company",
-    "wildcard_filter": 0
-   },
-   {
-    "default": null,
-    "fieldname": "from_date",
-    "fieldtype": "Date",
-    "label": "From Date",
-    "mandatory": 0,
-    "options": null,
-    "wildcard_filter": 0
-   },
-   {
-    "default": null,
-    "fieldname": "to_date",
-    "fieldtype": "Date",
-    "label": "To Date",
-    "mandatory": 0,
-    "options": null,
-    "wildcard_filter": 0
-   }
-  ],
-  "is_standard": "No",
-  "javascript": null,
-  "json": null,
-  "letter_head": "Company Letterhead - Grey",
-  "modified": "2026-09-08 16:03:18.065464",
-  "module": "Accounts",
-  "name": "VAT Report",
-  "prepared_report": 0,
-  "query": null,
-  "ref_doctype": "Sales Invoice",
-  "reference_report": null,
-  "report_name": "VAT Report",
-  "report_script": "\nresult = []\n\ncompany = filters.get(\"company\")\nif not company:\n    frappe.throw(\"Please select a Company\")\nfrom_date = filters.get(\"from_date\")\nto_date = filters.get(\"to_date\")\n\ncompany_abbr = frappe.db.get_value(\"Company\", company, \"abbr\")\nvat_account = f\"VAT - {company_abbr}\"\n\nsales = frappe.db.sql(\"\"\"\n    select si.name, si.posting_date, si.customer, si.net_total, sit.tax_amount\n    from `tabSales Invoice` si\n    inner join `tabSales Taxes and Charges` sit on sit.parent = si.name\n    where si.docstatus = 1\n    and si.company = %(company)s\n    and si.posting_date between %(from_date)s and %(to_date)s\n    and sit.account_head = %(vat_account)s\n\"\"\", {\"company\": company, \"from_date\": from_date, \"to_date\": to_date, \"vat_account\": vat_account}, as_dict=True)\n\ntotal_output_vat = 0\ntotal_taxable_sales = 0\nfor s in sales:\n    total_output_vat += s.tax_amount or 0\n    total_taxable_sales += s.net_total or 0\n    result.append({\n        \"type\": \"Output VAT (Sales)\",\n        \"reference\": s.name,\n        \"date\": s.posting_date,\n        \"party\": s.customer,\n        \"taxable_amount\": s.net_total,\n        \"vat_amount\": s.tax_amount\n    })\n\npurchases = frappe.db.sql(\"\"\"\n    select pi.name, pi.posting_date, pi.supplier, pi.net_total, pit.tax_amount\n    from `tabPurchase Invoice` pi\n    inner join `tabPurchase Taxes and Charges` pit on pit.parent = pi.name\n    where pi.docstatus = 1\n    and pi.company = %(company)s\n    and pi.posting_date between %(from_date)s and %(to_date)s\n    and pit.account_head = %(vat_account)s\n\"\"\", {\"company\": company, \"from_date\": from_date, \"to_date\": to_date, \"vat_account\": vat_account}, as_dict=True)\n\ntotal_input_vat = 0\ntotal_taxable_purchases = 0\nfor p in purchases:\n    total_input_vat += p.tax_amount or 0\n    total_taxable_purchases += p.net_total or 0\n    result.append({\n        \"type\": \"Input VAT (Purchase)\",\n        \"reference\": p.name,\n        \"date\": p.posting_date,\n        \"party\": p.supplier,\n        \"taxable_amount\": p.net_total,\n        \"vat_amount\": p.tax_amount\n    })\n\nnet_vat = total_output_vat - total_input_vat\nresult.append({\n    \"type\": \"--- SUMMARY ---\",\n    \"reference\": \"\",\n    \"date\": \"\",\n    \"party\": f\"Taxable Sales: {total_taxable_sales} | Taxable Purchases: {total_taxable_purchases}\",\n    \"taxable_amount\": None,\n    \"vat_amount\": None\n})\nresult.append({\n    \"type\": \"Net VAT Payable\" if net_vat >= 0 else \"Net VAT Refundable\",\n    \"reference\": \"\",\n    \"date\": \"\",\n    \"party\": \"\",\n    \"taxable_amount\": None,\n    \"vat_amount\": abs(net_vat)\n})\n\ncolumns = [\n    {\"label\": \"Type\", \"fieldname\": \"type\", \"fieldtype\": \"Data\", \"width\": 180},\n    {\"label\": \"Reference\", \"fieldname\": \"reference\", \"fieldtype\": \"Data\", \"width\": 150},\n    {\"label\": \"Date\", \"fieldname\": \"date\", \"fieldtype\": \"Date\", \"width\": 100},\n    {\"label\": \"Party\", \"fieldname\": \"party\", \"fieldtype\": \"Data\", \"width\": 220},\n    {\"label\": \"Taxable Amount\", \"fieldname\": \"taxable_amount\", \"fieldtype\": \"Currency\", \"width\": 130},\n    {\"label\": \"VAT Amount (13%)\", \"fieldname\": \"vat_amount\", \"fieldtype\": \"Currency\", \"width\": 130},\n]\n",
-  "report_type": "Script Report",
-  "roles": [
-   {
-    "role": "Accounts Manager"
-   },
-   {
-    "role": "Accounts User"
-   }
-  ],
-  "timeout": 0
- },
- {
-  "add_total_row": 0,
-  "add_translate_data": 0,
-  "columns": [
-   {
     "fieldname": "account_name",
     "fieldtype": "Data",
     "label": "Account Name",
@@ -710,6 +504,1213 @@
    },
    {
     "role": "Accounts Manager"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [
+   {
+    "fieldname": "date",
+    "fieldtype": "Date",
+    "label": "Date",
+    "options": null,
+    "width": 100
+   },
+   {
+    "fieldname": "account",
+    "fieldtype": "Data",
+    "label": "Account",
+    "options": null,
+    "width": 220
+   },
+   {
+    "fieldname": "voucher_type",
+    "fieldtype": "Data",
+    "label": "Voucher Type",
+    "options": null,
+    "width": 130
+   },
+   {
+    "fieldname": "voucher_no",
+    "fieldtype": "Data",
+    "label": "Voucher No",
+    "options": null,
+    "width": 150
+   },
+   {
+    "fieldname": "amount",
+    "fieldtype": "Currency",
+    "label": "Amount",
+    "options": null,
+    "width": 130
+   },
+   {
+    "fieldname": "remarks",
+    "fieldtype": "Data",
+    "label": "Remarks",
+    "options": null,
+    "width": 250
+   }
+  ],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [
+   {
+    "default": null,
+    "fieldname": "company",
+    "fieldtype": "Link",
+    "label": "Company",
+    "mandatory": 0,
+    "options": "Company",
+    "wildcard_filter": 0
+   },
+   {
+    "default": null,
+    "fieldname": "from_date",
+    "fieldtype": "Date",
+    "label": "From Date",
+    "mandatory": 0,
+    "options": null,
+    "wildcard_filter": 0
+   },
+   {
+    "default": null,
+    "fieldname": "to_date",
+    "fieldtype": "Date",
+    "label": "To Date",
+    "mandatory": 0,
+    "options": null,
+    "wildcard_filter": 0
+   }
+  ],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": "Company Letterhead - Grey",
+  "modified": "2026-09-09 11:57:52.568016",
+  "module": "Accounts",
+  "name": "IBA Expense Details",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "GL Entry",
+  "reference_report": null,
+  "report_name": "IBA Expense Details",
+  "report_script": "\ncolumns = [\n    {\"label\": \"Date\", \"fieldname\": \"date\", \"fieldtype\": \"Date\", \"width\": 100},\n    {\"label\": \"Account\", \"fieldname\": \"account\", \"fieldtype\": \"Data\", \"width\": 220},\n    {\"label\": \"Voucher Type\", \"fieldname\": \"voucher_type\", \"fieldtype\": \"Data\", \"width\": 130},\n    {\"label\": \"Voucher No\", \"fieldname\": \"voucher_no\", \"fieldtype\": \"Data\", \"width\": 150},\n    {\"label\": \"Amount\", \"fieldname\": \"amount\", \"fieldtype\": \"Currency\", \"width\": 130},\n    {\"label\": \"Remarks\", \"fieldname\": \"remarks\", \"fieldtype\": \"Data\", \"width\": 250},\n]\nresult = []\ncompany = filters.get(\"company\")\nfrom_date = filters.get(\"from_date\")\nto_date = filters.get(\"to_date\")\n\nconditions = \"gle.company = %(company)s and acc.root_type = 'Expense' and gle.is_cancelled = 0\"\nvalues = {\"company\": company}\nif from_date:\n    conditions += \" and gle.posting_date >= %(from_date)s\"\n    values[\"from_date\"] = from_date\nif to_date:\n    conditions += \" and gle.posting_date <= %(to_date)s\"\n    values[\"to_date\"] = to_date\n\namount_field = \"gle.credit\" if \"Expense\" == \"Income\" else \"gle.debit\"\n\nrows = frappe.db.sql(f\"\"\"\n    select gle.posting_date, gle.account, gle.voucher_type, gle.voucher_no, {amount_field} as amount, gle.remarks\n    from `tabGL Entry` gle\n    inner join `tabAccount` acc on acc.name = gle.account\n    where {conditions}\n    order by gle.posting_date desc\n\"\"\", values, as_dict=True)\n\ntotal = 0\nfor r in rows:\n    total += frappe.utils.flt(r.amount)\n    result.append({\n        \"date\": r.posting_date,\n        \"account\": r.account,\n        \"voucher_type\": r.voucher_type,\n        \"voucher_no\": r.voucher_no,\n        \"amount\": r.amount,\n        \"remarks\": r.remarks or \"\"\n    })\n\nresult.append({\"date\": None, \"account\": \"TOTAL\", \"voucher_type\": \"\", \"voucher_no\": \"\", \"amount\": total, \"remarks\": \"\"})\n",
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "Accounts User"
+   },
+   {
+    "role": "Accounts Manager"
+   },
+   {
+    "role": "Auditor"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [
+   {
+    "fieldname": "visitor_name",
+    "fieldtype": "Data",
+    "label": "Visitor Name",
+    "options": null,
+    "width": 180
+   },
+   {
+    "fieldname": "contact_number",
+    "fieldtype": "Data",
+    "label": "Contact",
+    "options": null,
+    "width": 130
+   },
+   {
+    "fieldname": "company",
+    "fieldtype": "Data",
+    "label": "Company",
+    "options": null,
+    "width": 180
+   },
+   {
+    "fieldname": "interested_course",
+    "fieldtype": "Data",
+    "label": "Interested Course",
+    "options": null,
+    "width": 180
+   },
+   {
+    "fieldname": "follow_up_date",
+    "fieldtype": "Date",
+    "label": "Follow-up Date",
+    "options": null,
+    "width": 120
+   },
+   {
+    "fieldname": "remarks",
+    "fieldtype": "Data",
+    "label": "Remarks",
+    "options": null,
+    "width": 220
+   },
+   {
+    "fieldname": "open_link",
+    "fieldtype": "Data",
+    "label": "Open",
+    "options": null,
+    "width": 100
+   }
+  ],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [
+   {
+    "default": null,
+    "fieldname": "company",
+    "fieldtype": "Link",
+    "label": "Company",
+    "mandatory": 0,
+    "options": "Company",
+    "wildcard_filter": 0
+   }
+  ],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": "Company Letterhead - Grey",
+  "modified": "2026-09-09 12:51:07.419769",
+  "module": "Accounts",
+  "name": "IBA Follow-up Due",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Visitor Entry",
+  "reference_report": null,
+  "report_name": "IBA Follow-up Due",
+  "report_script": "\ncolumns = [\n    {\"label\": \"Visitor Name\", \"fieldname\": \"visitor_name\", \"fieldtype\": \"Data\", \"width\": 180},\n    {\"label\": \"Contact\", \"fieldname\": \"contact_number\", \"fieldtype\": \"Data\", \"width\": 130},\n    {\"label\": \"Company\", \"fieldname\": \"company\", \"fieldtype\": \"Data\", \"width\": 180},\n    {\"label\": \"Interested Course\", \"fieldname\": \"interested_course\", \"fieldtype\": \"Data\", \"width\": 180},\n    {\"label\": \"Follow-up Date\", \"fieldname\": \"follow_up_date\", \"fieldtype\": \"Date\", \"width\": 120},\n    {\"label\": \"Remarks\", \"fieldname\": \"remarks\", \"fieldtype\": \"Data\", \"width\": 220},\n    {\"label\": \"Open\", \"fieldname\": \"open_link\", \"fieldtype\": \"HTML\", \"width\": 100},\n]\nresult = []\ncompany = filters.get(\"company\")\n\nconditions = \"status = 'Not Converted' and follow_up_date <= CURDATE()\"\nvalues = {}\nif company:\n    conditions += \" and company = %(company)s\"\n    values[\"company\"] = company\n\nrows = frappe.db.sql(f\"\"\"\n    select name, visitor_name, contact_number, company, interested_course, follow_up_date, remarks\n    from `tabVisitor Entry`\n    where {conditions}\n    order by follow_up_date asc\n\"\"\", values, as_dict=True)\n\nfor r in rows:\n    link = f'<a href=\"/app/visitor-entry/{r.name}\" class=\"btn btn-default btn-xs\">Open</a>'\n    result.append({\n        \"visitor_name\": r.visitor_name,\n        \"contact_number\": r.contact_number,\n        \"company\": r.company,\n        \"interested_course\": r.interested_course,\n        \"follow_up_date\": r.follow_up_date,\n        \"remarks\": r.remarks or \"\",\n        \"open_link\": link\n    })\n",
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "System Manager"
+   },
+   {
+    "role": "Sales User"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [
+   {
+    "fieldname": "course",
+    "fieldtype": "Data",
+    "label": "Course",
+    "options": null,
+    "width": 220
+   },
+   {
+    "fieldname": "count",
+    "fieldtype": "Int",
+    "label": "Total Enrolled",
+    "options": null,
+    "width": 130
+   },
+   {
+    "fieldname": "total_fee",
+    "fieldtype": "Currency",
+    "label": "Total Fee Collected",
+    "options": null,
+    "width": 160
+   }
+  ],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [
+   {
+    "default": null,
+    "fieldname": "company",
+    "fieldtype": "Link",
+    "label": "Company",
+    "mandatory": 0,
+    "options": "Company",
+    "wildcard_filter": 0
+   },
+   {
+    "default": null,
+    "fieldname": "from_date",
+    "fieldtype": "Date",
+    "label": "From Date",
+    "mandatory": 0,
+    "options": null,
+    "wildcard_filter": 0
+   },
+   {
+    "default": null,
+    "fieldname": "to_date",
+    "fieldtype": "Date",
+    "label": "To Date",
+    "mandatory": 0,
+    "options": null,
+    "wildcard_filter": 0
+   }
+  ],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": "Company Letterhead - Grey",
+  "modified": "2026-09-10 12:25:25.913439",
+  "module": "Accounts",
+  "name": "IBA Course-wise Enrollment",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Student",
+  "reference_report": null,
+  "report_name": "IBA Course-wise Enrollment",
+  "report_script": "\ncolumns = [\n    {\"label\": \"Course\", \"fieldname\": \"course\", \"fieldtype\": \"Data\", \"width\": 220},\n    {\"label\": \"Total Enrolled\", \"fieldname\": \"count\", \"fieldtype\": \"Int\", \"width\": 130},\n    {\"label\": \"Total Fee Collected\", \"fieldname\": \"total_fee\", \"fieldtype\": \"Currency\", \"width\": 160},\n]\nresult = []\ncompany = filters.get(\"company\")\nfrom_date = filters.get(\"from_date\")\nto_date = filters.get(\"to_date\")\n\nconditions = \"1=1\"\nvalues = {}\nif company:\n    conditions += \" and company = %(company)s\"\n    values[\"company\"] = company\nif from_date:\n    conditions += \" and admission_date >= %(from_date)s\"\n    values[\"from_date\"] = from_date\nif to_date:\n    conditions += \" and admission_date <= %(to_date)s\"\n    values[\"to_date\"] = to_date\n\nrows = frappe.db.sql(f\"\"\"\n    select course_enrolled, count(*) as cnt, sum(fee) as total_fee\n    from `tabStudent`\n    where {conditions} and course_enrolled is not null\n    group by course_enrolled\n    order by cnt desc\n\"\"\", values, as_dict=True)\n\nfor r in rows:\n    result.append({\"course\": r.course_enrolled, \"count\": r.cnt, \"total_fee\": r.total_fee})\n",
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "System Manager"
+   },
+   {
+    "role": "Sales User"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [
+   {
+    "fieldname": "date",
+    "fieldtype": "Date",
+    "label": "Date",
+    "options": null,
+    "width": 110
+   },
+   {
+    "fieldname": "student_name",
+    "fieldtype": "Data",
+    "label": "Student",
+    "options": null,
+    "width": 180
+   },
+   {
+    "fieldname": "company",
+    "fieldtype": "Data",
+    "label": "Company",
+    "options": null,
+    "width": 180
+   },
+   {
+    "fieldname": "course",
+    "fieldtype": "Data",
+    "label": "Course",
+    "options": null,
+    "width": 180
+   },
+   {
+    "fieldname": "fee",
+    "fieldtype": "Currency",
+    "label": "Fee",
+    "options": null,
+    "width": 100
+   }
+  ],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [
+   {
+    "default": null,
+    "fieldname": "company",
+    "fieldtype": "Link",
+    "label": "Company",
+    "mandatory": 0,
+    "options": "Company",
+    "wildcard_filter": 0
+   },
+   {
+    "default": null,
+    "fieldname": "from_date",
+    "fieldtype": "Date",
+    "label": "From Date",
+    "mandatory": 0,
+    "options": null,
+    "wildcard_filter": 0
+   },
+   {
+    "default": null,
+    "fieldname": "to_date",
+    "fieldtype": "Date",
+    "label": "To Date",
+    "mandatory": 0,
+    "options": null,
+    "wildcard_filter": 0
+   }
+  ],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": "Company Letterhead - Grey",
+  "modified": "2026-09-09 16:59:20.656153",
+  "module": "Accounts",
+  "name": "IBA Student Enrollment by Date",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Student",
+  "reference_report": null,
+  "report_name": "IBA Student Enrollment by Date",
+  "report_script": "\ncolumns = [\n    {\"label\": \"Date\", \"fieldname\": \"date\", \"fieldtype\": \"Date\", \"width\": 110},\n    {\"label\": \"Student\", \"fieldname\": \"student_name\", \"fieldtype\": \"Data\", \"width\": 180},\n    {\"label\": \"Company\", \"fieldname\": \"company\", \"fieldtype\": \"Data\", \"width\": 180},\n    {\"label\": \"Course\", \"fieldname\": \"course\", \"fieldtype\": \"Data\", \"width\": 180},\n    {\"label\": \"Fee\", \"fieldname\": \"fee\", \"fieldtype\": \"Currency\", \"width\": 100},\n]\nresult = []\ncompany = filters.get(\"company\")\nfrom_date = filters.get(\"from_date\")\nto_date = filters.get(\"to_date\")\n\nconditions = \"1=1\"\nvalues = {}\nif company:\n    conditions += \" and company = %(company)s\"\n    values[\"company\"] = company\nif from_date:\n    conditions += \" and admission_date >= %(from_date)s\"\n    values[\"from_date\"] = from_date\nif to_date:\n    conditions += \" and admission_date <= %(to_date)s\"\n    values[\"to_date\"] = to_date\n\nrows = frappe.db.sql(f\"\"\"\n    select admission_date, student_name, company, course_enrolled, fee\n    from `tabStudent`\n    where {conditions}\n    order by admission_date desc\n\"\"\", values, as_dict=True)\n\ntotal = 0\nfor r in rows:\n    total += frappe.utils.flt(r.fee)\n    result.append({\"date\": r.admission_date, \"student_name\": r.student_name, \"company\": r.company, \"course\": r.course_enrolled, \"fee\": r.fee})\n\nresult.append({\"date\": None, \"student_name\": f\"TOTAL ({len(rows)} students)\", \"company\": \"\", \"course\": \"\", \"fee\": total})\n",
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "System Manager"
+   },
+   {
+    "role": "Sales User"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [
+   {
+    "fieldname": "item_name",
+    "fieldtype": "Data",
+    "label": "Item",
+    "options": null,
+    "width": 200
+   },
+   {
+    "fieldname": "warehouse",
+    "fieldtype": "Data",
+    "label": "Warehouse",
+    "options": null,
+    "width": 200
+   },
+   {
+    "fieldname": "actual_qty",
+    "fieldtype": "Float",
+    "label": "Current Stock",
+    "options": null,
+    "width": 130
+   },
+   {
+    "fieldname": "reorder_level",
+    "fieldtype": "Float",
+    "label": "Reorder Level",
+    "options": null,
+    "width": 130
+   },
+   {
+    "fieldname": "reorder_qty",
+    "fieldtype": "Float",
+    "label": "Reorder Qty",
+    "options": null,
+    "width": 130
+   },
+   {
+    "fieldname": "shortage",
+    "fieldtype": "Float",
+    "label": "Shortage",
+    "options": null,
+    "width": 130
+   }
+  ],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [
+   {
+    "default": null,
+    "fieldname": "company",
+    "fieldtype": "Link",
+    "label": "Company",
+    "mandatory": 0,
+    "options": "Company",
+    "wildcard_filter": 0
+   },
+   {
+    "default": null,
+    "fieldname": "warehouse",
+    "fieldtype": "Link",
+    "label": "Warehouse",
+    "mandatory": 0,
+    "options": "Warehouse",
+    "wildcard_filter": 0
+   }
+  ],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": "Company Letterhead - Grey",
+  "modified": "2026-09-10 11:01:13.574032",
+  "module": "Stock",
+  "name": "IBA Low Stock Report",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Item",
+  "reference_report": null,
+  "report_name": "IBA Low Stock Report",
+  "report_script": "\ncolumns = [\n    {\"label\": \"Item\", \"fieldname\": \"item_name\", \"fieldtype\": \"Data\", \"width\": 200},\n    {\"label\": \"Warehouse\", \"fieldname\": \"warehouse\", \"fieldtype\": \"Data\", \"width\": 200},\n    {\"label\": \"Current Stock\", \"fieldname\": \"actual_qty\", \"fieldtype\": \"Float\", \"width\": 130},\n    {\"label\": \"Reorder Level\", \"fieldname\": \"reorder_level\", \"fieldtype\": \"Float\", \"width\": 130},\n    {\"label\": \"Reorder Qty\", \"fieldname\": \"reorder_qty\", \"fieldtype\": \"Float\", \"width\": 130},\n    {\"label\": \"Shortage\", \"fieldname\": \"shortage\", \"fieldtype\": \"Float\", \"width\": 130},\n]\nresult = []\ncompany = filters.get(\"company\")\nwarehouse = filters.get(\"warehouse\")\n\nconditions = \"1=1\"\nvalues = {}\nif company:\n    conditions += \" and w.company = %(company)s\"\n    values[\"company\"] = company\nif warehouse:\n    conditions += \" and b.warehouse = %(warehouse)s\"\n    values[\"warehouse\"] = warehouse\n\nrows = frappe.db.sql(f\"\"\"\n    select b.item_code, i.item_name, b.warehouse, b.actual_qty,\n           ir.warehouse_reorder_level, ir.warehouse_reorder_qty\n    from `tabBin` b\n    inner join `tabItem` i on i.name = b.item_code\n    inner join `tabItem Reorder` ir on ir.parent = b.item_code and ir.warehouse = b.warehouse\n    inner join `tabWarehouse` w on w.name = b.warehouse\n    where {conditions} and ir.warehouse_reorder_level > 0\n    and b.actual_qty <= ir.warehouse_reorder_level\n    order by (ir.warehouse_reorder_level - b.actual_qty) desc\n\"\"\", values, as_dict=True)\n\nfor r in rows:\n    result.append({\n        \"item_name\": r.item_name,\n        \"warehouse\": r.warehouse,\n        \"actual_qty\": r.actual_qty,\n        \"reorder_level\": r.warehouse_reorder_level,\n        \"reorder_qty\": r.warehouse_reorder_qty,\n        \"shortage\": r.warehouse_reorder_level - r.actual_qty\n    })\n",
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "Item Manager"
+   },
+   {
+    "role": "Stock Manager"
+   },
+   {
+    "role": "Stock User"
+   },
+   {
+    "role": "Sales User"
+   },
+   {
+    "role": "Purchase User"
+   },
+   {
+    "role": "Maintenance User"
+   },
+   {
+    "role": "Accounts User"
+   },
+   {
+    "role": "Manufacturing User"
+   },
+   {
+    "role": "Desk User"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [
+   {
+    "fieldname": "item_name",
+    "fieldtype": "Data",
+    "label": "Item",
+    "options": null,
+    "width": 200
+   },
+   {
+    "fieldname": "warehouse",
+    "fieldtype": "Data",
+    "label": "Warehouse",
+    "options": null,
+    "width": 220
+   },
+   {
+    "fieldname": "actual_qty",
+    "fieldtype": "Float",
+    "label": "Current Stock",
+    "options": null,
+    "width": 130
+   },
+   {
+    "fieldname": "valuation_rate",
+    "fieldtype": "Currency",
+    "label": "Valuation Rate",
+    "options": null,
+    "width": 130
+   },
+   {
+    "fieldname": "stock_value",
+    "fieldtype": "Currency",
+    "label": "Stock Value",
+    "options": null,
+    "width": 130
+   }
+  ],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [
+   {
+    "default": null,
+    "fieldname": "company",
+    "fieldtype": "Link",
+    "label": "Company",
+    "mandatory": 0,
+    "options": "Company",
+    "wildcard_filter": 0
+   },
+   {
+    "default": null,
+    "fieldname": "warehouse",
+    "fieldtype": "Link",
+    "label": "Warehouse",
+    "mandatory": 0,
+    "options": "Warehouse",
+    "wildcard_filter": 0
+   },
+   {
+    "default": null,
+    "fieldname": "item",
+    "fieldtype": "Link",
+    "label": "Item",
+    "mandatory": 0,
+    "options": "Item",
+    "wildcard_filter": 0
+   }
+  ],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": "Company Letterhead - Grey",
+  "modified": "2026-09-11 16:52:48.165275",
+  "module": "Stock",
+  "name": "IBA Item Stock Report",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Item",
+  "reference_report": null,
+  "report_name": "IBA Item Stock Report",
+  "report_script": "\ncolumns = [\n    {\"label\": \"Item\", \"fieldname\": \"item_name\", \"fieldtype\": \"Data\", \"width\": 200},\n    {\"label\": \"Warehouse\", \"fieldname\": \"warehouse\", \"fieldtype\": \"Data\", \"width\": 220},\n    {\"label\": \"Current Stock\", \"fieldname\": \"actual_qty\", \"fieldtype\": \"Float\", \"width\": 130},\n    {\"label\": \"Valuation Rate\", \"fieldname\": \"valuation_rate\", \"fieldtype\": \"Currency\", \"width\": 130},\n    {\"label\": \"Stock Value\", \"fieldname\": \"stock_value\", \"fieldtype\": \"Currency\", \"width\": 130},\n]\nresult = []\ncompany = filters.get(\"company\")\nwarehouse = filters.get(\"warehouse\")\nitem_code = filters.get(\"item\")\n\nconditions = \"1=1\"\nvalues = {}\nif company:\n    conditions += \" and w.company = %(company)s\"\n    values[\"company\"] = company\nif warehouse:\n    conditions += \" and b.warehouse = %(warehouse)s\"\n    values[\"warehouse\"] = warehouse\nif item_code:\n    conditions += \" and b.item_code = %(item_code)s\"\n    values[\"item_code\"] = item_code\n\nrows = frappe.db.sql(f\"\"\"\n    select i.item_name, b.warehouse, b.actual_qty, b.valuation_rate, b.stock_value\n    from `tabBin` b\n    inner join `tabItem` i on i.name = b.item_code\n    inner join `tabWarehouse` w on w.name = b.warehouse\n    where {conditions} and b.actual_qty != 0\n    order by i.item_name\n\"\"\", values, as_dict=True)\n\nfor r in rows:\n    result.append(r)\n",
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "Item Manager"
+   },
+   {
+    "role": "Stock Manager"
+   },
+   {
+    "role": "Stock User"
+   },
+   {
+    "role": "Sales User"
+   },
+   {
+    "role": "Purchase User"
+   },
+   {
+    "role": "Maintenance User"
+   },
+   {
+    "role": "Accounts User"
+   },
+   {
+    "role": "Manufacturing User"
+   },
+   {
+    "role": "Desk User"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [
+   {
+    "fieldname": "metric",
+    "fieldtype": "Data",
+    "label": "Metric",
+    "options": null,
+    "width": 250
+   },
+   {
+    "fieldname": "value",
+    "fieldtype": "Currency",
+    "label": "Value",
+    "options": null,
+    "width": 180
+   }
+  ],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [
+   {
+    "default": null,
+    "fieldname": "company",
+    "fieldtype": "Link",
+    "label": "Company",
+    "mandatory": 0,
+    "options": "Company",
+    "wildcard_filter": 0
+   },
+   {
+    "default": "This Month",
+    "fieldname": "period",
+    "fieldtype": "Select",
+    "label": "Period",
+    "mandatory": 0,
+    "options": "This Month\nToday\nThis Week\nLast Month\nThis Year\nLast Year\nCustom",
+    "wildcard_filter": 0
+   },
+   {
+    "default": null,
+    "fieldname": "from_date",
+    "fieldtype": "Date",
+    "label": "From Date (for Custom)",
+    "mandatory": 0,
+    "options": null,
+    "wildcard_filter": 0
+   },
+   {
+    "default": null,
+    "fieldname": "to_date",
+    "fieldtype": "Date",
+    "label": "To Date (for Custom)",
+    "mandatory": 0,
+    "options": null,
+    "wildcard_filter": 0
+   }
+  ],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": "Company Letterhead - Grey",
+  "modified": "2026-09-11 10:55:24.667278",
+  "module": "Accounts",
+  "name": "IBA Executive Dashboard",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Sales Invoice",
+  "reference_report": null,
+  "report_name": "IBA Executive Dashboard",
+  "report_script": "\ncolumns = [\n    {\"label\": \"Metric\", \"fieldname\": \"metric\", \"fieldtype\": \"Data\", \"width\": 250},\n    {\"label\": \"Value\", \"fieldname\": \"value\", \"fieldtype\": \"Currency\", \"width\": 180},\n]\nresult = []\n\ncompany = filters.get(\"company\")\nperiod = filters.get(\"period\") or \"This Month\"\ncustom_from = filters.get(\"from_date\")\ncustom_to = filters.get(\"to_date\")\n\nt = frappe.utils.getdate(frappe.utils.today())\n\nfrom_date = None\nto_date = None\n\nif period == \"Today\":\n    from_date = t\n    to_date = t\nelif period == \"This Week\":\n    from_date = frappe.utils.add_days(t, -t.weekday())\n    to_date = t\nelif period == \"This Month\":\n    from_date = frappe.utils.get_first_day(t)\n    to_date = t\nelif period == \"Last Month\":\n    last_month = frappe.utils.add_months(t, -1)\n    from_date = frappe.utils.get_first_day(last_month)\n    to_date = frappe.utils.get_last_day(last_month)\nelif period == \"This Year\":\n    from_date = frappe.utils.getdate(str(t.year) + \"-01-01\")\n    to_date = t\nelif period == \"Last Year\":\n    from_date = frappe.utils.getdate(str(t.year - 1) + \"-01-01\")\n    to_date = frappe.utils.getdate(str(t.year - 1) + \"-12-31\")\nelif period == \"Custom\" and custom_from and custom_to:\n    from_date = frappe.utils.getdate(custom_from)\n    to_date = frappe.utils.getdate(custom_to)\nelse:\n    from_date = frappe.utils.get_first_day(t)\n    to_date = t\n\ncompany_cond = \"and company = %(company)s\" if company else \"\"\nvalues = {\"from_date\": from_date, \"to_date\": to_date}\nif company:\n    values[\"company\"] = company\n\ndef sql_sum(query, vals):\n    r = frappe.db.sql(query, vals)\n    return r[0][0] if r and r[0][0] else 0\n\ntotal_sales = sql_sum(f\"select sum(grand_total) from `tabSales Invoice` where docstatus=1 and posting_date between %(from_date)s and %(to_date)s {company_cond}\", values)\ntotal_purchase = sql_sum(f\"select sum(grand_total) from `tabPurchase Invoice` where docstatus=1 and posting_date between %(from_date)s and %(to_date)s {company_cond}\", values)\npayments_received = sql_sum(f\"select sum(paid_amount) from `tabPayment Entry` where docstatus=1 and payment_type='Receive' and posting_date between %(from_date)s and %(to_date)s {company_cond}\", values)\npayments_made = sql_sum(f\"select sum(paid_amount) from `tabPayment Entry` where docstatus=1 and payment_type='Pay' and posting_date between %(from_date)s and %(to_date)s {company_cond}\", values)\n\ngl_cond = \"and gle.company = %(company)s\" if company else \"\"\ntotal_expenses = sql_sum(f\"\"\"\n    select sum(gle.debit - gle.credit) from `tabGL Entry` gle\n    inner join `tabAccount` acc on acc.name = gle.account\n    where acc.root_type = 'Expense' and gle.is_cancelled=0\n    and gle.posting_date between %(from_date)s and %(to_date)s {gl_cond}\n\"\"\", values)\ntotal_revenue = sql_sum(f\"\"\"\n    select sum(gle.credit - gle.debit) from `tabGL Entry` gle\n    inner join `tabAccount` acc on acc.name = gle.account\n    where acc.root_type = 'Income' and gle.is_cancelled=0\n    and gle.posting_date between %(from_date)s and %(to_date)s {gl_cond}\n\"\"\", values)\nnet_profit = (total_revenue or 0) - (total_expenses or 0)\n\nstock_cond = \"and w.company = %(company)s\" if company else \"\"\nstock_value = sql_sum(f\"\"\"\n    select sum(b.stock_value) from `tabBin` b\n    inner join `tabWarehouse` w on w.name = b.warehouse\n    where 1=1 {stock_cond}\n\"\"\", values)\n\nitem_cond = \"and company_owner = %(company)s\" if company else \"\"\ntotal_items = frappe.db.sql(f\"select count(*) from `tabItem` where 1=1 {item_cond}\", values)[0][0] or 0\n\nbank_cond = \"and gle.company = %(company)s\" if company else \"\"\nbank_balance = sql_sum(f\"\"\"\n    select sum(gle.debit - gle.credit) from `tabGL Entry` gle\n    inner join `tabAccount` acc on acc.name = gle.account\n    where acc.account_type in ('Bank','Cash') and gle.is_cancelled=0 {bank_cond}\n\"\"\", values)\n\nrecv_cond = \"and company = %(company)s\" if company else \"\"\nreceivables = sql_sum(f\"select sum(outstanding_amount) from `tabSales Invoice` where docstatus=1 and outstanding_amount > 0 {recv_cond}\", values)\npayables = sql_sum(f\"select sum(outstanding_amount) from `tabPurchase Invoice` where docstatus=1 and outstanding_amount > 0 {recv_cond}\", values)\n\nrows = [\n    (\"Total Sales\", total_sales),\n    (\"Total Purchase\", total_purchase),\n    (\"Total Payments Received\", payments_received),\n    (\"Total Payments Made\", payments_made),\n    (\"Total Revenue (Income)\", total_revenue),\n    (\"Total Expenses\", total_expenses),\n    (\"Net Profit\", net_profit),\n    (\"Total Stock Value\", stock_value),\n    (\"Total Items (count)\", total_items),\n    (\"Bank & Cash Balance\", bank_balance),\n    (\"Outstanding Receivables\", receivables),\n    (\"Outstanding Payables\", payables),\n]\n\nfor row in rows:\n    result.append({\"metric\": row[0], \"value\": row[1]})\n",
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "Accounts Manager"
+   },
+   {
+    "role": "Accounts User"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [
+   {
+    "fieldname": "party",
+    "fieldtype": "Data",
+    "label": "Customer",
+    "options": null,
+    "width": 220
+   },
+   {
+    "fieldname": "contact",
+    "fieldtype": "Data",
+    "label": "Contact",
+    "options": null,
+    "width": 150
+   },
+   {
+    "fieldname": "total_invoiced",
+    "fieldtype": "Currency",
+    "label": "Total Invoiced",
+    "options": null,
+    "width": 150
+   },
+   {
+    "fieldname": "total_paid",
+    "fieldtype": "Currency",
+    "label": "Total Paid",
+    "options": null,
+    "width": 150
+   },
+   {
+    "fieldname": "due",
+    "fieldtype": "Currency",
+    "label": "Outstanding Due",
+    "options": null,
+    "width": 150
+   }
+  ],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [
+   {
+    "default": null,
+    "fieldname": "company",
+    "fieldtype": "Link",
+    "label": "Company",
+    "mandatory": 0,
+    "options": "Company",
+    "wildcard_filter": 0
+   }
+  ],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": "Company Letterhead - Grey",
+  "modified": "2026-09-11 17:05:40.632092",
+  "module": "Accounts",
+  "name": "IBA Customer Due Summary",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Customer",
+  "reference_report": null,
+  "report_name": "IBA Customer Due Summary",
+  "report_script": "\ncolumns = [\n    {\"label\": \"Customer\", \"fieldname\": \"party\", \"fieldtype\": \"Data\", \"width\": 220},\n    {\"label\": \"Contact\", \"fieldname\": \"contact\", \"fieldtype\": \"Data\", \"width\": 150},\n    {\"label\": \"Total Invoiced\", \"fieldname\": \"total_invoiced\", \"fieldtype\": \"Currency\", \"width\": 150},\n    {\"label\": \"Total Paid\", \"fieldname\": \"total_paid\", \"fieldtype\": \"Currency\", \"width\": 150},\n    {\"label\": \"Outstanding Due\", \"fieldname\": \"due\", \"fieldtype\": \"Currency\", \"width\": 150},\n]\nresult = []\ncompany = filters.get(\"company\")\n\nconditions = \"docstatus = 1 and outstanding_amount > 0\"\nvalues = {}\nif company:\n    conditions += \" and company = %(company)s\"\n    values[\"company\"] = company\n\nrows = frappe.db.sql(f\"\"\"\n    select customer as party, sum(grand_total) as total_invoiced,\n           sum(grand_total - outstanding_amount) as total_paid,\n           sum(outstanding_amount) as due\n    from `tabSales Invoice`\n    where {conditions}\n    group by customer\n    order by due desc\n\"\"\", values, as_dict=True)\n\ntotal_due = 0\nfor r in rows:\n    contact = frappe.db.get_value(\"Customer\", r.party, \"mobile_no\") or frappe.db.get_value(\"Customer\", r.party, \"customer_primary_contact\") or \"\"\n    total_due += frappe.utils.flt(r.due)\n    result.append({\n        \"party\": r.party,\n        \"contact\": contact,\n        \"total_invoiced\": r.total_invoiced,\n        \"total_paid\": r.total_paid,\n        \"due\": r.due\n    })\n\nresult.append({\"party\": \"TOTAL\", \"contact\": \"\", \"total_invoiced\": None, \"total_paid\": None, \"due\": total_due})\n",
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "Sales User"
+   },
+   {
+    "role": "Sales Manager"
+   },
+   {
+    "role": "Sales Master Manager"
+   },
+   {
+    "role": "Stock User"
+   },
+   {
+    "role": "Stock Manager"
+   },
+   {
+    "role": "Accounts User"
+   },
+   {
+    "role": "Accounts Manager"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [
+   {
+    "fieldname": "party",
+    "fieldtype": "Data",
+    "label": "Supplier",
+    "options": null,
+    "width": 220
+   },
+   {
+    "fieldname": "contact",
+    "fieldtype": "Data",
+    "label": "Contact",
+    "options": null,
+    "width": 150
+   },
+   {
+    "fieldname": "total_invoiced",
+    "fieldtype": "Currency",
+    "label": "Total Invoiced",
+    "options": null,
+    "width": 150
+   },
+   {
+    "fieldname": "total_paid",
+    "fieldtype": "Currency",
+    "label": "Total Paid",
+    "options": null,
+    "width": 150
+   },
+   {
+    "fieldname": "due",
+    "fieldtype": "Currency",
+    "label": "Outstanding Due",
+    "options": null,
+    "width": 150
+   }
+  ],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [
+   {
+    "default": null,
+    "fieldname": "company",
+    "fieldtype": "Link",
+    "label": "Company",
+    "mandatory": 0,
+    "options": "Company",
+    "wildcard_filter": 0
+   }
+  ],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": "Company Letterhead - Grey",
+  "modified": "2026-09-11 17:05:40.667761",
+  "module": "Accounts",
+  "name": "IBA Supplier Due Summary",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Supplier",
+  "reference_report": null,
+  "report_name": "IBA Supplier Due Summary",
+  "report_script": "\ncolumns = [\n    {\"label\": \"Supplier\", \"fieldname\": \"party\", \"fieldtype\": \"Data\", \"width\": 220},\n    {\"label\": \"Contact\", \"fieldname\": \"contact\", \"fieldtype\": \"Data\", \"width\": 150},\n    {\"label\": \"Total Invoiced\", \"fieldname\": \"total_invoiced\", \"fieldtype\": \"Currency\", \"width\": 150},\n    {\"label\": \"Total Paid\", \"fieldname\": \"total_paid\", \"fieldtype\": \"Currency\", \"width\": 150},\n    {\"label\": \"Outstanding Due\", \"fieldname\": \"due\", \"fieldtype\": \"Currency\", \"width\": 150},\n]\nresult = []\ncompany = filters.get(\"company\")\n\nconditions = \"docstatus = 1 and outstanding_amount > 0\"\nvalues = {}\nif company:\n    conditions += \" and company = %(company)s\"\n    values[\"company\"] = company\n\nrows = frappe.db.sql(f\"\"\"\n    select supplier as party, sum(grand_total) as total_invoiced,\n           sum(grand_total - outstanding_amount) as total_paid,\n           sum(outstanding_amount) as due\n    from `tabPurchase Invoice`\n    where {conditions}\n    group by supplier\n    order by due desc\n\"\"\", values, as_dict=True)\n\ntotal_due = 0\nfor r in rows:\n    contact = frappe.db.get_value(\"Supplier\", r.party, \"mobile_no\") or frappe.db.get_value(\"Supplier\", r.party, \"supplier_primary_contact\") or \"\"\n    total_due += frappe.utils.flt(r.due)\n    result.append({\n        \"party\": r.party,\n        \"contact\": contact,\n        \"total_invoiced\": r.total_invoiced,\n        \"total_paid\": r.total_paid,\n        \"due\": r.due\n    })\n\nresult.append({\"party\": \"TOTAL\", \"contact\": \"\", \"total_invoiced\": None, \"total_paid\": None, \"due\": total_due})\n",
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "Purchase User"
+   },
+   {
+    "role": "Purchase Manager"
+   },
+   {
+    "role": "Purchase Master Manager"
+   },
+   {
+    "role": "Stock User"
+   },
+   {
+    "role": "Stock Manager"
+   },
+   {
+    "role": "Accounts User"
+   },
+   {
+    "role": "Accounts Manager"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [
+   {
+    "fieldname": "date",
+    "fieldtype": "Date",
+    "label": "Date",
+    "options": null,
+    "width": 100
+   },
+   {
+    "fieldname": "account",
+    "fieldtype": "Data",
+    "label": "Account",
+    "options": null,
+    "width": 220
+   },
+   {
+    "fieldname": "voucher_type",
+    "fieldtype": "Data",
+    "label": "Voucher Type",
+    "options": null,
+    "width": 130
+   },
+   {
+    "fieldname": "voucher_no",
+    "fieldtype": "Data",
+    "label": "Voucher No",
+    "options": null,
+    "width": 150
+   },
+   {
+    "fieldname": "amount",
+    "fieldtype": "Currency",
+    "label": "Amount",
+    "options": null,
+    "width": 130
+   },
+   {
+    "fieldname": "remarks",
+    "fieldtype": "Data",
+    "label": "Remarks",
+    "options": null,
+    "width": 250
+   }
+  ],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [
+   {
+    "default": null,
+    "fieldname": "company",
+    "fieldtype": "Link",
+    "label": "Company",
+    "mandatory": 0,
+    "options": "Company",
+    "wildcard_filter": 0
+   },
+   {
+    "default": null,
+    "fieldname": "from_date",
+    "fieldtype": "Date",
+    "label": "From Date",
+    "mandatory": 0,
+    "options": null,
+    "wildcard_filter": 0
+   },
+   {
+    "default": null,
+    "fieldname": "to_date",
+    "fieldtype": "Date",
+    "label": "To Date",
+    "mandatory": 0,
+    "options": null,
+    "wildcard_filter": 0
+   }
+  ],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": "Company Letterhead - Grey",
+  "modified": "2026-09-09 11:57:52.547579",
+  "module": "Accounts",
+  "name": "IBA Income Details",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "GL Entry",
+  "reference_report": null,
+  "report_name": "IBA Income Details",
+  "report_script": "\ncolumns = [\n    {\"label\": \"Date\", \"fieldname\": \"date\", \"fieldtype\": \"Date\", \"width\": 100},\n    {\"label\": \"Account\", \"fieldname\": \"account\", \"fieldtype\": \"Data\", \"width\": 220},\n    {\"label\": \"Voucher Type\", \"fieldname\": \"voucher_type\", \"fieldtype\": \"Data\", \"width\": 130},\n    {\"label\": \"Voucher No\", \"fieldname\": \"voucher_no\", \"fieldtype\": \"Data\", \"width\": 150},\n    {\"label\": \"Amount\", \"fieldname\": \"amount\", \"fieldtype\": \"Currency\", \"width\": 130},\n    {\"label\": \"Remarks\", \"fieldname\": \"remarks\", \"fieldtype\": \"Data\", \"width\": 250},\n]\nresult = []\ncompany = filters.get(\"company\")\nfrom_date = filters.get(\"from_date\")\nto_date = filters.get(\"to_date\")\n\nconditions = \"gle.company = %(company)s and acc.root_type = 'Income' and gle.is_cancelled = 0\"\nvalues = {\"company\": company}\nif from_date:\n    conditions += \" and gle.posting_date >= %(from_date)s\"\n    values[\"from_date\"] = from_date\nif to_date:\n    conditions += \" and gle.posting_date <= %(to_date)s\"\n    values[\"to_date\"] = to_date\n\namount_field = \"gle.credit\" if \"Income\" == \"Income\" else \"gle.debit\"\n\nrows = frappe.db.sql(f\"\"\"\n    select gle.posting_date, gle.account, gle.voucher_type, gle.voucher_no, {amount_field} as amount, gle.remarks\n    from `tabGL Entry` gle\n    inner join `tabAccount` acc on acc.name = gle.account\n    where {conditions}\n    order by gle.posting_date desc\n\"\"\", values, as_dict=True)\n\ntotal = 0\nfor r in rows:\n    total += frappe.utils.flt(r.amount)\n    result.append({\n        \"date\": r.posting_date,\n        \"account\": r.account,\n        \"voucher_type\": r.voucher_type,\n        \"voucher_no\": r.voucher_no,\n        \"amount\": r.amount,\n        \"remarks\": r.remarks or \"\"\n    })\n\nresult.append({\"date\": None, \"account\": \"TOTAL\", \"voucher_type\": \"\", \"voucher_no\": \"\", \"amount\": total, \"remarks\": \"\"})\n",
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "Accounts User"
+   },
+   {
+    "role": "Accounts Manager"
+   },
+   {
+    "role": "Auditor"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [
+   {
+    "fieldname": "date",
+    "fieldtype": "Date",
+    "label": "Date",
+    "options": null,
+    "width": 100
+   },
+   {
+    "fieldname": "type",
+    "fieldtype": "Data",
+    "label": "Type",
+    "options": null,
+    "width": 100
+   },
+   {
+    "fieldname": "account",
+    "fieldtype": "Data",
+    "label": "Account",
+    "options": null,
+    "width": 220
+   },
+   {
+    "fieldname": "voucher_type",
+    "fieldtype": "Data",
+    "label": "Voucher Type",
+    "options": null,
+    "width": 130
+   },
+   {
+    "fieldname": "voucher_no",
+    "fieldtype": "Data",
+    "label": "Voucher No",
+    "options": null,
+    "width": 150
+   },
+   {
+    "fieldname": "amount",
+    "fieldtype": "Currency",
+    "label": "Amount",
+    "options": null,
+    "width": 130
+   }
+  ],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [
+   {
+    "default": null,
+    "fieldname": "company",
+    "fieldtype": "Link",
+    "label": "Company",
+    "mandatory": 0,
+    "options": "Company",
+    "wildcard_filter": 0
+   },
+   {
+    "default": null,
+    "fieldname": "from_date",
+    "fieldtype": "Date",
+    "label": "From Date",
+    "mandatory": 0,
+    "options": null,
+    "wildcard_filter": 0
+   },
+   {
+    "default": null,
+    "fieldname": "to_date",
+    "fieldtype": "Date",
+    "label": "To Date",
+    "mandatory": 0,
+    "options": null,
+    "wildcard_filter": 0
+   }
+  ],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": "Company Letterhead - Grey",
+  "modified": "2026-09-09 11:57:52.586354",
+  "module": "Accounts",
+  "name": "IBA Transaction Details",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "GL Entry",
+  "reference_report": null,
+  "report_name": "IBA Transaction Details",
+  "report_script": "\ncolumns = [\n    {\"label\": \"Date\", \"fieldname\": \"date\", \"fieldtype\": \"Date\", \"width\": 100},\n    {\"label\": \"Type\", \"fieldname\": \"type\", \"fieldtype\": \"Data\", \"width\": 100},\n    {\"label\": \"Account\", \"fieldname\": \"account\", \"fieldtype\": \"Data\", \"width\": 220},\n    {\"label\": \"Voucher Type\", \"fieldname\": \"voucher_type\", \"fieldtype\": \"Data\", \"width\": 130},\n    {\"label\": \"Voucher No\", \"fieldname\": \"voucher_no\", \"fieldtype\": \"Data\", \"width\": 150},\n    {\"label\": \"Amount\", \"fieldname\": \"amount\", \"fieldtype\": \"Currency\", \"width\": 130},\n]\nresult = []\ncompany = filters.get(\"company\")\nfrom_date = filters.get(\"from_date\")\nto_date = filters.get(\"to_date\")\n\nconditions = \"gle.company = %(company)s and acc.root_type in ('Income', 'Expense') and gle.is_cancelled = 0\"\nvalues = {\"company\": company}\nif from_date:\n    conditions += \" and gle.posting_date >= %(from_date)s\"\n    values[\"from_date\"] = from_date\nif to_date:\n    conditions += \" and gle.posting_date <= %(to_date)s\"\n    values[\"to_date\"] = to_date\n\nrows = frappe.db.sql(f\"\"\"\n    select gle.posting_date, acc.root_type, gle.account, gle.voucher_type, gle.voucher_no, gle.debit, gle.credit\n    from `tabGL Entry` gle\n    inner join `tabAccount` acc on acc.name = gle.account\n    where {conditions}\n    order by gle.posting_date desc\n\"\"\", values, as_dict=True)\n\nfor r in rows:\n    amount = r.credit if r.root_type == \"Income\" else r.debit\n    result.append({\n        \"date\": r.posting_date,\n        \"type\": r.root_type,\n        \"account\": r.account,\n        \"voucher_type\": r.voucher_type,\n        \"voucher_no\": r.voucher_no,\n        \"amount\": amount\n    })\n",
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "Accounts User"
+   },
+   {
+    "role": "Accounts Manager"
+   },
+   {
+    "role": "Auditor"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [
+   {
+    "fieldname": "student_name",
+    "fieldtype": "Data",
+    "label": "Student",
+    "options": null,
+    "width": 180
+   },
+   {
+    "fieldname": "contact_number",
+    "fieldtype": "Data",
+    "label": "Contact",
+    "options": null,
+    "width": 130
+   },
+   {
+    "fieldname": "company",
+    "fieldtype": "Data",
+    "label": "Company",
+    "options": null,
+    "width": 180
+   },
+   {
+    "fieldname": "course",
+    "fieldtype": "Data",
+    "label": "Course",
+    "options": null,
+    "width": 180
+   },
+   {
+    "fieldname": "fee",
+    "fieldtype": "Currency",
+    "label": "Fee",
+    "options": null,
+    "width": 100
+   },
+   {
+    "fieldname": "paid",
+    "fieldtype": "Currency",
+    "label": "Paid",
+    "options": null,
+    "width": 100
+   },
+   {
+    "fieldname": "due",
+    "fieldtype": "Currency",
+    "label": "Due",
+    "options": null,
+    "width": 100
+   },
+   {
+    "fieldname": "invoice",
+    "fieldtype": "Data",
+    "label": "Invoice",
+    "options": null,
+    "width": 130
+   }
+  ],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [
+   {
+    "default": null,
+    "fieldname": "company",
+    "fieldtype": "Link",
+    "label": "Company",
+    "mandatory": 0,
+    "options": "Company",
+    "wildcard_filter": 0
+   },
+   {
+    "default": null,
+    "fieldname": "from_date",
+    "fieldtype": "Date",
+    "label": "From Date",
+    "mandatory": 0,
+    "options": null,
+    "wildcard_filter": 0
+   },
+   {
+    "default": null,
+    "fieldname": "to_date",
+    "fieldtype": "Date",
+    "label": "To Date",
+    "mandatory": 0,
+    "options": null,
+    "wildcard_filter": 0
+   }
+  ],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": "Company Letterhead - Grey",
+  "modified": "2026-09-10 12:25:25.857379",
+  "module": "Accounts",
+  "name": "IBA Student Fee Due",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Student",
+  "reference_report": null,
+  "report_name": "IBA Student Fee Due",
+  "report_script": "\ncolumns = [\n    {\"label\": \"Student\", \"fieldname\": \"student_name\", \"fieldtype\": \"Data\", \"width\": 180},\n    {\"label\": \"Contact\", \"fieldname\": \"contact_number\", \"fieldtype\": \"Data\", \"width\": 130},\n    {\"label\": \"Company\", \"fieldname\": \"company\", \"fieldtype\": \"Data\", \"width\": 180},\n    {\"label\": \"Course\", \"fieldname\": \"course\", \"fieldtype\": \"Data\", \"width\": 180},\n    {\"label\": \"Fee\", \"fieldname\": \"fee\", \"fieldtype\": \"Currency\", \"width\": 100},\n    {\"label\": \"Paid\", \"fieldname\": \"paid\", \"fieldtype\": \"Currency\", \"width\": 100},\n    {\"label\": \"Due\", \"fieldname\": \"due\", \"fieldtype\": \"Currency\", \"width\": 100},\n    {\"label\": \"Invoice\", \"fieldname\": \"invoice\", \"fieldtype\": \"Data\", \"width\": 130},\n]\nresult = []\ncompany = filters.get(\"company\")\nfrom_date = filters.get(\"from_date\")\nto_date = filters.get(\"to_date\")\n\nconditions = \"s.sales_invoice is not null\"\nvalues = {}\nif company:\n    conditions += \" and s.company = %(company)s\"\n    values[\"company\"] = company\nif from_date:\n    conditions += \" and si.posting_date >= %(from_date)s\"\n    values[\"from_date\"] = from_date\nif to_date:\n    conditions += \" and si.posting_date <= %(to_date)s\"\n    values[\"to_date\"] = to_date\n\nrows = frappe.db.sql(f\"\"\"\n    select s.student_name, s.contact_number, s.company, s.course_enrolled, s.fee, s.sales_invoice,\n           si.grand_total, si.outstanding_amount\n    from `tabStudent` s\n    inner join `tabSales Invoice` si on si.name = s.sales_invoice\n    where {conditions} and si.outstanding_amount > 0\n    order by si.outstanding_amount desc\n\"\"\", values, as_dict=True)\n\nfor r in rows:\n    result.append({\n        \"student_name\": r.student_name,\n        \"contact_number\": r.contact_number,\n        \"company\": r.company,\n        \"course\": r.course_enrolled,\n        \"fee\": r.grand_total,\n        \"paid\": r.grand_total - r.outstanding_amount,\n        \"due\": r.outstanding_amount,\n        \"invoice\": r.sales_invoice\n    })\n",
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "System Manager"
+   },
+   {
+    "role": "Sales User"
    }
   ],
   "timeout": 0

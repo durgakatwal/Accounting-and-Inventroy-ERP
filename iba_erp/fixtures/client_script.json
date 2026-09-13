@@ -1,0 +1,24 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Student",
+  "enabled": 1,
+  "modified": "2026-09-09 16:21:47.390665",
+  "module": null,
+  "name": "Student Generate Invoice Button",
+  "script": "\nfrappe.ui.form.on('Student', {\n    refresh: function(frm) {\n        if (!frm.doc.sales_invoice && frm.doc.course_enrolled && frm.doc.fee) {\n            frm.add_custom_button('Generate Invoice', function() {\n                frappe.call({\n                    method: 'generate_student_invoice',\n                    args: { student: frm.doc.name },\n                    callback: function(r) {\n                        if (r.message) {\n                            frappe.msgprint('Invoice created: ' + r.message);\n                            frm.reload_doc();\n                        }\n                    }\n                });\n            }).addClass('btn-primary');\n        }\n        if (frm.doc.sales_invoice) {\n            frm.add_custom_button('View Invoice', function() {\n                frappe.set_route('Form', 'Sales Invoice', frm.doc.sales_invoice);\n            });\n        }\n    }\n});\n",
+  "view": "Form"
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Client Script",
+  "dt": "Item",
+  "enabled": 1,
+  "modified": "2026-09-11 10:11:40.336827",
+  "module": null,
+  "name": "Item List Bulk Reorder Level",
+  "script": "\nfrappe.listview_settings['Item'] = frappe.listview_settings['Item'] || {};\nfrappe.listview_settings['Item'].onload = function(listview) {\n    listview.page.add_action_item(__('Set Reorder Level'), function() {\n        let selected = listview.get_checked_items();\n        if (!selected.length) {\n            frappe.msgprint('Please select at least one item first.');\n            return;\n        }\n        let d = new frappe.ui.Dialog({\n            title: 'Set Reorder Level for ' + selected.length + ' item(s)',\n            fields: [\n                {fieldname: 'warehouse', fieldtype: 'Link', options: 'Warehouse', label: 'Warehouse', reqd: 1},\n                {fieldname: 'reorder_level', fieldtype: 'Float', label: 'Reorder Level', reqd: 1},\n                {fieldname: 'reorder_qty', fieldtype: 'Float', label: 'Reorder Qty', reqd: 1},\n            ],\n            primary_action_label: 'Apply',\n            primary_action(values) {\n                d.hide();\n                selected.forEach(function(item) {\n                    frappe.call({\n                        method: 'frappe.client.get',\n                        args: { doctype: 'Item', name: item.name },\n                        callback: function(r) {\n                            let item_doc = r.message;\n                            let existing = item_doc.reorder_levels.find(row => row.warehouse === values.warehouse);\n                            if (existing) {\n                                existing.warehouse_reorder_level = values.reorder_level;\n                                existing.warehouse_reorder_qty = values.reorder_qty;\n                            } else {\n                                item_doc.reorder_levels.push({\n                                    warehouse: values.warehouse,\n                                    warehouse_reorder_level: values.reorder_level,\n                                    warehouse_reorder_qty: values.reorder_qty,\n                                    material_request_type: 'Purchase'\n                                });\n                            }\n                            frappe.call({\n                                method: 'frappe.client.save',\n                                args: { doc: item_doc },\n                                callback: function() {\n                                    frappe.show_alert({message: item.name + ' updated', indicator: 'green'});\n                                }\n                            });\n                        }\n                    });\n                });\n            }\n        });\n        d.show();\n    });\n};\n",
+  "view": "List"
+ }
+]
