@@ -1,6 +1,6 @@
 {
  "app": "iba_erp",
- "creation": "2026-09-08 14:28:44.785907",
+ "creation": "2026-09-10 15:47:01.049484",
  "docstatus": 0,
  "doctype": "Workspace Sidebar",
  "idx": 0,
@@ -10,18 +10,17 @@
    "collapsible": 1,
    "indent": 0,
    "keep_closed": 0,
-   "label": "Sales Invoices",
-   "link_to": "Sales Invoice",
-   "link_type": "DocType",
+   "label": "Stocks Balance",
+   "link_to": "Stock Balance",
+   "link_type": "Report",
    "show_arrow": 0,
    "type": "Link"
   }
  ],
- "modified": "2026-09-09 17:32:08.548096",
+ "modified": "2026-09-10 15:47:24.485223",
  "modified_by": "Administrator",
- "module": "Accounts",
- "name": "Sales Invoices",
+ "name": "Stocks Balance",
  "owner": "Administrator",
  "standard": 1,
- "title": "Sales Invoices"
+ "title": "Stocks Balance"
 }

@@ -1,0 +1,21 @@
+{
+ "app": "iba_erp",
+ "bg_color": "gray",
+ "creation": "2026-09-11 10:46:39.064655",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon_image": "/private/files/icons8-dashboard-64.png",
+ "icon_type": "Link",
+ "idx": 0,
+ "label": "IBA Dashboard",
+ "link_to": "IBA Dashboard",
+ "link_type": "Workspace Sidebar",
+ "modified": "2026-09-11 11:30:19.768883",
+ "modified_by": "Administrator",
+ "name": "IBA Dashboard",
+ "owner": "Administrator",
+ "restrict_removal": 0,
+ "roles": [],
+ "standard": 1
+}

@@ -1,0 +1,21 @@
+{
+ "app": "iba_erp",
+ "bg_color": "gray",
+ "creation": "2026-09-10 15:47:01.056468",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon_image": "/private/files/in-stock.png",
+ "icon_type": "Link",
+ "idx": 0,
+ "label": "Stocks Balance",
+ "link_to": "Stocks Balance",
+ "link_type": "Workspace Sidebar",
+ "modified": "2026-09-10 16:16:57.311199",
+ "modified_by": "Administrator",
+ "name": "Stocks Balance",
+ "owner": "Administrator",
+ "restrict_removal": 0,
+ "roles": [],
+ "standard": 1
+}
