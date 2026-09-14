@@ -4,6 +4,109 @@
   "add_translate_data": 0,
   "columns": [
    {
+    "fieldname": "type",
+    "fieldtype": "Data",
+    "label": "Type",
+    "options": null,
+    "width": 180
+   },
+   {
+    "fieldname": "reference",
+    "fieldtype": "Data",
+    "label": "Reference",
+    "options": null,
+    "width": 150
+   },
+   {
+    "fieldname": "date",
+    "fieldtype": "Date",
+    "label": "Date",
+    "options": null,
+    "width": 100
+   },
+   {
+    "fieldname": "party",
+    "fieldtype": "Data",
+    "label": "Party",
+    "options": null,
+    "width": 220
+   },
+   {
+    "fieldname": "taxable_amount",
+    "fieldtype": "Currency",
+    "label": "Taxable Amount",
+    "options": null,
+    "width": 130
+   },
+   {
+    "fieldname": "vat_amount",
+    "fieldtype": "Currency",
+    "label": "VAT Amount (13%)",
+    "options": null,
+    "width": 130
+   }
+  ],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [
+   {
+    "default": null,
+    "fieldname": "company",
+    "fieldtype": "Link",
+    "label": "Company",
+    "mandatory": 0,
+    "options": "Company",
+    "wildcard_filter": 0
+   },
+   {
+    "default": null,
+    "fieldname": "from_date",
+    "fieldtype": "Date",
+    "label": "From Date",
+    "mandatory": 0,
+    "options": null,
+    "wildcard_filter": 0
+   },
+   {
+    "default": null,
+    "fieldname": "to_date",
+    "fieldtype": "Date",
+    "label": "To Date",
+    "mandatory": 0,
+    "options": null,
+    "wildcard_filter": 0
+   }
+  ],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": "Company Letterhead - Grey",
+  "modified": "2026-09-08 16:03:18.065464",
+  "module": "Accounts",
+  "name": "VAT Report",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Sales Invoice",
+  "reference_report": null,
+  "report_name": "VAT Report",
+  "report_script": "\nresult = []\n\ncompany = filters.get(\"company\")\nif not company:\n    frappe.throw(\"Please select a Company\")\nfrom_date = filters.get(\"from_date\")\nto_date = filters.get(\"to_date\")\n\ncompany_abbr = frappe.db.get_value(\"Company\", company, \"abbr\")\nvat_account = f\"VAT - {company_abbr}\"\n\nsales = frappe.db.sql(\"\"\"\n    select si.name, si.posting_date, si.customer, si.net_total, sit.tax_amount\n    from `tabSales Invoice` si\n    inner join `tabSales Taxes and Charges` sit on sit.parent = si.name\n    where si.docstatus = 1\n    and si.company = %(company)s\n    and si.posting_date between %(from_date)s and %(to_date)s\n    and sit.account_head = %(vat_account)s\n\"\"\", {\"company\": company, \"from_date\": from_date, \"to_date\": to_date, \"vat_account\": vat_account}, as_dict=True)\n\ntotal_output_vat = 0\ntotal_taxable_sales = 0\nfor s in sales:\n    total_output_vat += s.tax_amount or 0\n    total_taxable_sales += s.net_total or 0\n    result.append({\n        \"type\": \"Output VAT (Sales)\",\n        \"reference\": s.name,\n        \"date\": s.posting_date,\n        \"party\": s.customer,\n        \"taxable_amount\": s.net_total,\n        \"vat_amount\": s.tax_amount\n    })\n\npurchases = frappe.db.sql(\"\"\"\n    select pi.name, pi.posting_date, pi.supplier, pi.net_total, pit.tax_amount\n    from `tabPurchase Invoice` pi\n    inner join `tabPurchase Taxes and Charges` pit on pit.parent = pi.name\n    where pi.docstatus = 1\n    and pi.company = %(company)s\n    and pi.posting_date between %(from_date)s and %(to_date)s\n    and pit.account_head = %(vat_account)s\n\"\"\", {\"company\": company, \"from_date\": from_date, \"to_date\": to_date, \"vat_account\": vat_account}, as_dict=True)\n\ntotal_input_vat = 0\ntotal_taxable_purchases = 0\nfor p in purchases:\n    total_input_vat += p.tax_amount or 0\n    total_taxable_purchases += p.net_total or 0\n    result.append({\n        \"type\": \"Input VAT (Purchase)\",\n        \"reference\": p.name,\n        \"date\": p.posting_date,\n        \"party\": p.supplier,\n        \"taxable_amount\": p.net_total,\n        \"vat_amount\": p.tax_amount\n    })\n\nnet_vat = total_output_vat - total_input_vat\nresult.append({\n    \"type\": \"--- SUMMARY ---\",\n    \"reference\": \"\",\n    \"date\": \"\",\n    \"party\": f\"Taxable Sales: {total_taxable_sales} | Taxable Purchases: {total_taxable_purchases}\",\n    \"taxable_amount\": None,\n    \"vat_amount\": None\n})\nresult.append({\n    \"type\": \"Net VAT Payable\" if net_vat >= 0 else \"Net VAT Refundable\",\n    \"reference\": \"\",\n    \"date\": \"\",\n    \"party\": \"\",\n    \"taxable_amount\": None,\n    \"vat_amount\": abs(net_vat)\n})\n\ncolumns = [\n    {\"label\": \"Type\", \"fieldname\": \"type\", \"fieldtype\": \"Data\", \"width\": 180},\n    {\"label\": \"Reference\", \"fieldname\": \"reference\", \"fieldtype\": \"Data\", \"width\": 150},\n    {\"label\": \"Date\", \"fieldname\": \"date\", \"fieldtype\": \"Date\", \"width\": 100},\n    {\"label\": \"Party\", \"fieldname\": \"party\", \"fieldtype\": \"Data\", \"width\": 220},\n    {\"label\": \"Taxable Amount\", \"fieldname\": \"taxable_amount\", \"fieldtype\": \"Currency\", \"width\": 130},\n    {\"label\": \"VAT Amount (13%)\", \"fieldname\": \"vat_amount\", \"fieldtype\": \"Currency\", \"width\": 130},\n]\n",
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "Accounts Manager"
+   },
+   {
+    "role": "Accounts User"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [
+   {
     "fieldname": "account_name",
     "fieldtype": "Data",
     "label": "Account Name",
@@ -1382,6 +1485,109 @@
    },
    {
     "role": "Accounts Manager"
+   }
+  ],
+  "timeout": 0
+ },
+ {
+  "add_total_row": 0,
+  "add_translate_data": 0,
+  "columns": [
+   {
+    "fieldname": "category",
+    "fieldtype": "Data",
+    "label": "Category",
+    "options": null,
+    "width": 180
+   },
+   {
+    "fieldname": "reference",
+    "fieldtype": "Data",
+    "label": "Reference",
+    "options": null,
+    "width": 150
+   },
+   {
+    "fieldname": "date",
+    "fieldtype": "Date",
+    "label": "Date",
+    "options": null,
+    "width": 100
+   },
+   {
+    "fieldname": "details",
+    "fieldtype": "Data",
+    "label": "Details",
+    "options": null,
+    "width": 250
+   },
+   {
+    "fieldname": "amount",
+    "fieldtype": "Currency",
+    "label": "Amount",
+    "options": null,
+    "width": 120
+   },
+   {
+    "fieldname": "user",
+    "fieldtype": "Data",
+    "label": "User",
+    "options": null,
+    "width": 150
+   }
+  ],
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Report",
+  "filters": [
+   {
+    "default": null,
+    "fieldname": "company",
+    "fieldtype": "Link",
+    "label": "Company",
+    "mandatory": 0,
+    "options": "Company",
+    "wildcard_filter": 0
+   },
+   {
+    "default": null,
+    "fieldname": "from_date",
+    "fieldtype": "Date",
+    "label": "From Date",
+    "mandatory": 0,
+    "options": null,
+    "wildcard_filter": 0
+   },
+   {
+    "default": null,
+    "fieldname": "to_date",
+    "fieldtype": "Date",
+    "label": "To Date",
+    "mandatory": 0,
+    "options": null,
+    "wildcard_filter": 0
+   }
+  ],
+  "is_standard": "No",
+  "javascript": null,
+  "json": null,
+  "letter_head": "Company Letterhead - Grey",
+  "modified": "2026-09-08 16:03:18.082234",
+  "module": "Accounts",
+  "name": "Internal Audit Report",
+  "prepared_report": 0,
+  "query": null,
+  "ref_doctype": "Sales Invoice",
+  "reference_report": null,
+  "report_name": "Internal Audit Report",
+  "report_script": "\nresult = []\n\ncompany = filters.get(\"company\")\nfrom_date = filters.get(\"from_date\")\nto_date = filters.get(\"to_date\")\n\nconditions = \"company = %(company)s\"\nvalues = {\"company\": company}\nif from_date:\n    conditions += \" and posting_date >= %(from_date)s\"\n    values[\"from_date\"] = from_date\nif to_date:\n    conditions += \" and posting_date <= %(to_date)s\"\n    values[\"to_date\"] = to_date\n\n# 1. Stock Reconciliation adjustments\nrecon_conditions = conditions.replace(\"posting_date\", \"posting_date\")\nrecons = frappe.db.sql(f\"\"\"\n    select name, posting_date, owner\n    from `tabStock Reconciliation`\n    where docstatus = 1 and {recon_conditions}\n\"\"\", values, as_dict=True)\nfor r in recons:\n    result.append({\n        \"category\": \"Stock Reconciliation\",\n        \"reference\": r.name,\n        \"date\": r.posting_date,\n        \"details\": \"Physical stock count adjustment\",\n        \"amount\": 0,\n        \"user\": r.owner\n    })\n\n# 2. Cancelled Sales Invoices\ncancelled = frappe.db.sql(f\"\"\"\n    select name, posting_date, grand_total, owner\n    from `tabSales Invoice`\n    where docstatus = 2 and {conditions}\n\"\"\", values, as_dict=True)\nfor c in cancelled:\n    result.append({\n        \"category\": \"Cancelled Sales Invoice\",\n        \"reference\": c.name,\n        \"date\": c.posting_date,\n        \"details\": \"Invoice was cancelled after creation\",\n        \"amount\": c.grand_total,\n        \"user\": c.owner\n    })\n\n# 3. Manual Journal Entries (not auto-generated from other transactions)\nje_conditions = conditions\njournals = frappe.db.sql(f\"\"\"\n    select name, posting_date, total_debit, owner, voucher_type\n    from `tabJournal Entry`\n    where docstatus = 1 and voucher_type = 'Journal Entry' and {je_conditions}\n\"\"\", values, as_dict=True)\nfor j in journals:\n    result.append({\n        \"category\": \"Manual Journal Entry\",\n        \"reference\": j.name,\n        \"date\": j.posting_date,\n        \"details\": \"Manually posted journal entry\",\n        \"amount\": j.total_debit,\n        \"user\": j.owner\n    })\n\n# 4. Payment Entries with no invoice reference\npayments = frappe.db.sql(f\"\"\"\n    select pe.name, pe.posting_date, pe.paid_amount, pe.owner\n    from `tabPayment Entry` pe\n    where pe.docstatus = 1 and pe.company = %(company)s\n    and not exists (select 1 from `tabPayment Entry Reference` per where per.parent = pe.name)\n    {\"and pe.posting_date >= %(from_date)s\" if from_date else \"\"}\n    {\"and pe.posting_date <= %(to_date)s\" if to_date else \"\"}\n\"\"\", values, as_dict=True)\nfor p in payments:\n    result.append({\n        \"category\": \"Unlinked Payment Entry\",\n        \"reference\": p.name,\n        \"date\": p.posting_date,\n        \"details\": \"Payment with no linked invoice reference\",\n        \"amount\": p.paid_amount,\n        \"user\": p.owner\n    })\n\ncolumns = [\n    {\"label\": \"Category\", \"fieldname\": \"category\", \"fieldtype\": \"Data\", \"width\": 180},\n    {\"label\": \"Reference\", \"fieldname\": \"reference\", \"fieldtype\": \"Dynamic Link\", \"options\": \"category\", \"width\": 150},\n    {\"label\": \"Date\", \"fieldname\": \"date\", \"fieldtype\": \"Date\", \"width\": 100},\n    {\"label\": \"Details\", \"fieldname\": \"details\", \"fieldtype\": \"Data\", \"width\": 250},\n    {\"label\": \"Amount\", \"fieldname\": \"amount\", \"fieldtype\": \"Currency\", \"width\": 120},\n    {\"label\": \"User\", \"fieldname\": \"user\", \"fieldtype\": \"Data\", \"width\": 150},\n]\n\n",
+  "report_type": "Script Report",
+  "roles": [
+   {
+    "role": "Accounts Manager"
+   },
+   {
+    "role": "Accounts User"
    }
   ],
   "timeout": 0
