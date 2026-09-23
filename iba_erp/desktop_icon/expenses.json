@@ -1,0 +1,21 @@
+{
+ "app": "iba_erp",
+ "bg_color": "gray",
+ "creation": "2026-09-10 15:49:24.937586",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon_image": "/private/files/icons8-expenses-64.png",
+ "icon_type": "Link",
+ "idx": 0,
+ "label": "Expenses",
+ "link_to": "Expenses",
+ "link_type": "Workspace Sidebar",
+ "modified": "2026-09-10 16:05:35.342318",
+ "modified_by": "Administrator",
+ "name": "Expenses",
+ "owner": "Administrator",
+ "restrict_removal": 0,
+ "roles": [],
+ "standard": 1
+}

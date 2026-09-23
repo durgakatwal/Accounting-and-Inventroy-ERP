@@ -1,0 +1,40 @@
+{
+ "app": "iba_erp",
+ "creation": "2026-09-09 11:25:35.113612",
+ "docstatus": 0,
+ "doctype": "Workspace Sidebar",
+ "idx": 1,
+ "items": [
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "list",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Purchase Invoices",
+   "link_to": "Purchase Invoice",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  },
+  {
+   "child": 0,
+   "collapsible": 1,
+   "icon": "buying",
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Purchase Receipt",
+   "link_to": "Purchase Receipt",
+   "link_type": "DocType",
+   "show_arrow": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-09-11 16:46:00.954601",
+ "modified_by": "Administrator",
+ "module": "Accounts",
+ "name": "Purchase Invoices",
+ "owner": "Administrator",
+ "standard": 1,
+ "title": "Purchase Invoices"
+}

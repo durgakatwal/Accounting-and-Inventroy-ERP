@@ -1,0 +1,26 @@
+{
+ "app": "iba_erp",
+ "creation": "2026-09-10 15:49:24.931900",
+ "docstatus": 0,
+ "doctype": "Workspace Sidebar",
+ "idx": 0,
+ "items": [
+  {
+   "child": 0,
+   "collapsible": 1,
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Expenses",
+   "link_to": "IBA Expense Balances",
+   "link_type": "Report",
+   "show_arrow": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-09-10 15:49:54.859577",
+ "modified_by": "Administrator",
+ "name": "Expenses",
+ "owner": "Administrator",
+ "standard": 1,
+ "title": "Expenses"
+}

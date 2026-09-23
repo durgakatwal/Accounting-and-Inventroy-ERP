@@ -1,0 +1,26 @@
+{
+ "app": "iba_erp",
+ "creation": "2026-09-10 15:47:01.049484",
+ "docstatus": 0,
+ "doctype": "Workspace Sidebar",
+ "idx": 0,
+ "items": [
+  {
+   "child": 0,
+   "collapsible": 1,
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "Stocks Balance",
+   "link_to": "Stock Balance",
+   "link_type": "Report",
+   "show_arrow": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-09-10 15:47:24.485223",
+ "modified_by": "Administrator",
+ "name": "Stocks Balance",
+ "owner": "Administrator",
+ "standard": 1,
+ "title": "Stocks Balance"
+}

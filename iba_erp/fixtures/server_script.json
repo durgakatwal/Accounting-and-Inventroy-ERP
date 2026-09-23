@@ -1,0 +1,40 @@
+[
+ {
+  "allow_guest": 0,
+  "api_method": null,
+  "cron_format": null,
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Server Script",
+  "doctype_event": "After Save",
+  "enable_rate_limit": 0,
+  "event_frequency": "All",
+  "modified": "2026-09-09 16:36:33.563243",
+  "module": null,
+  "name": "Visitor Entry Convert to Student",
+  "rate_limit_count": 5,
+  "rate_limit_seconds": 86400,
+  "reference_doctype": "Visitor Entry",
+  "script": "\nif doc.status == \"Converted\" and not doc.student:\n    student = frappe.get_doc({\n        \"doctype\": \"Student\",\n        \"student_name\": doc.visitor_name,\n        \"contact_number\": doc.contact_number,\n        \"address\": doc.address,\n        \"company\": doc.company,\n        \"branch\": doc.branch,\n        \"course_enrolled\": doc.interested_course,\n        \"fee\": frappe.db.get_value(\"Item\", doc.interested_course, \"standard_rate\") if doc.interested_course else 0,\n        \"remarks\": doc.remarks,\n        \"source_visitor\": doc.name\n    })\n    student.insert(ignore_permissions=True)\n    frappe.db.set_value(\"Visitor Entry\", doc.name, \"student\", student.name)\n    frappe.msgprint(f\"Student record created: {student.name}\")\n",
+  "script_type": "DocType Event"
+ },
+ {
+  "allow_guest": 0,
+  "api_method": null,
+  "cron_format": null,
+  "disabled": 0,
+  "docstatus": 0,
+  "doctype": "Server Script",
+  "doctype_event": "After Insert",
+  "enable_rate_limit": 0,
+  "event_frequency": "All",
+  "modified": "2026-09-09 16:20:50.518010",
+  "module": null,
+  "name": "Student Auto Create Customer",
+  "rate_limit_count": 5,
+  "rate_limit_seconds": 86400,
+  "reference_doctype": "Student",
+  "script": "\nif not doc.customer:\n    customer = frappe.get_doc({\n        \"doctype\": \"Customer\",\n        \"customer_name\": doc.student_name,\n        \"customer_type\": \"Individual\",\n        \"customer_group\": \"Individual\" if frappe.db.exists(\"Customer Group\", \"Individual\") else frappe.db.get_single_value(\"Selling Settings\", \"customer_group\"),\n        \"territory\": frappe.db.get_single_value(\"Selling Settings\", \"territory\"),\n    })\n    customer.insert(ignore_permissions=True)\n    frappe.db.set_value(\"Student\", doc.name, \"customer\", customer.name)\n",
+  "script_type": "DocType Event"
+ }
+]

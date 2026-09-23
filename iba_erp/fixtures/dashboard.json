@@ -1,0 +1,102 @@
+[
+ {
+  "cards": [
+   {
+    "card": "Total Visitors"
+   },
+   {
+    "card": "Converted Visitors"
+   },
+   {
+    "card": "Not Converted Visitors"
+   },
+   {
+    "card": "Total Students Enrolled"
+   },
+   {
+    "card": "Follow-ups Pending"
+   }
+  ],
+  "chart_options": null,
+  "charts": [
+   {
+    "chart": "Visitor Trend",
+    "width": "Full"
+   },
+   {
+    "chart": "Student Enrollment Trend",
+    "width": "Full"
+   },
+   {
+    "chart": "Conversion Status Breakdown",
+    "width": "Half"
+   },
+   {
+    "chart": "Visitors by Company",
+    "width": "Half"
+   },
+   {
+    "chart": "Visitors by Branch",
+    "width": "Half"
+   },
+   {
+    "chart": "Top Interested Courses",
+    "width": "Half"
+   }
+  ],
+  "dashboard_name": "IBA CRM Dashboard",
+  "docstatus": 0,
+  "doctype": "Dashboard",
+  "is_default": 0,
+  "is_standard": 0,
+  "modified": "2026-09-09 13:21:53.199737",
+  "module": null,
+  "name": "IBA CRM Dashboard"
+ },
+ {
+  "cards": [],
+  "chart_options": null,
+  "charts": [
+   {
+    "chart": "IBA Sales Trend",
+    "width": "Full"
+   },
+   {
+    "chart": "IBA Purchase Trend",
+    "width": "Half"
+   },
+   {
+    "chart": "IBA Payments Received Trend",
+    "width": "Half"
+   },
+   {
+    "chart": "IBA Payments Made Trend",
+    "width": "Half"
+   },
+   {
+    "chart": "IBA Stock Value Movement",
+    "width": "Half"
+   },
+   {
+    "chart": "IBA Visitor Trend",
+    "width": "Half"
+   },
+   {
+    "chart": "IBA Conversion Status",
+    "width": "Half"
+   },
+   {
+    "chart": "IBA Student Enrollment Trend",
+    "width": "Full"
+   }
+  ],
+  "dashboard_name": "IBA Executive Dashboard",
+  "docstatus": 0,
+  "doctype": "Dashboard",
+  "is_default": 0,
+  "is_standard": 0,
+  "modified": "2026-09-11 11:11:01.516966",
+  "module": null,
+  "name": "IBA Executive Dashboard"
+ }
+]

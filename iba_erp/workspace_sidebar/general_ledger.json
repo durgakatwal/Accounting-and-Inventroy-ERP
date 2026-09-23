@@ -1,0 +1,26 @@
+{
+ "app": "iba_erp",
+ "creation": "2026-09-10 15:45:23.060902",
+ "docstatus": 0,
+ "doctype": "Workspace Sidebar",
+ "idx": 0,
+ "items": [
+  {
+   "child": 0,
+   "collapsible": 1,
+   "indent": 0,
+   "keep_closed": 0,
+   "label": "General Ledger",
+   "link_to": "General Ledger",
+   "link_type": "Report",
+   "show_arrow": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-09-10 15:46:02.433792",
+ "modified_by": "Administrator",
+ "name": "General Ledger",
+ "owner": "Administrator",
+ "standard": 1,
+ "title": "General Ledger"
+}

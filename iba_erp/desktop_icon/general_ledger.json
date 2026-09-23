@@ -1,0 +1,21 @@
+{
+ "app": "iba_erp",
+ "bg_color": "gray",
+ "creation": "2026-09-10 15:45:23.081416",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon_image": "/private/files/icons8-ledger-64.png",
+ "icon_type": "Link",
+ "idx": 0,
+ "label": "General Ledger",
+ "link_to": "General Ledger",
+ "link_type": "Workspace Sidebar",
+ "modified": "2026-09-10 16:18:31.272805",
+ "modified_by": "Administrator",
+ "name": "General Ledger",
+ "owner": "Administrator",
+ "restrict_removal": 0,
+ "roles": [],
+ "standard": 1
+}

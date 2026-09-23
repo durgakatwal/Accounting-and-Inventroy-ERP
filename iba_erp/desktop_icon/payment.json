@@ -1,0 +1,21 @@
+{
+ "app": "iba_erp",
+ "bg_color": "gray",
+ "creation": "2026-09-09 11:23:40.211143",
+ "docstatus": 0,
+ "doctype": "Desktop Icon",
+ "hidden": 0,
+ "icon_image": "/private/files/icons8-payment-64.png",
+ "icon_type": "Link",
+ "idx": 0,
+ "label": "Payment",
+ "link_to": "Payments",
+ "link_type": "Workspace Sidebar",
+ "modified": "2026-09-09 12:06:17.362953",
+ "modified_by": "Administrator",
+ "name": "Payment",
+ "owner": "Administrator",
+ "restrict_removal": 0,
+ "roles": [],
+ "standard": 1
+}
